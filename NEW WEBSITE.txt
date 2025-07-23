@@ -1,0 +1,347 @@
+import React, { useState, useEffect } from 'react';
+import { MessageCircle, Send, Phone, Bell, ShoppingCart } from 'lucide-react';
+
+// Splash Cursor Component
+const SplashCursor = () => {
+  const [cursorPos, setCursorPos] = useState({ x: 0, y: 0 });
+  const [isVisible, setIsVisible] = useState(false);
+  const [trail, setTrail] = useState([]);
+
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      const newPos = { x: e.clientX, y: e.clientY };
+      setCursorPos(newPos);
+      setIsVisible(true);
+      
+      // Add to trail
+      setTrail(prev => {
+        const newTrail = [...prev, { ...newPos, id: Date.now() }];
+        return newTrail.slice(-8); // Keep last 8 positions
+      });
+    };
+
+    const handleMouseLeave = () => {
+      setIsVisible(false);
+      setTrail([]);
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseleave', handleMouseLeave);
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseleave', handleMouseLeave);
+    };
+  }, []);
+
+  // Clean up old trail points
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTrail(prev => prev.slice(1));
+    }, 100);
+    
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <>
+      <style jsx>{`
+        * {
+          cursor: none !important;
+        }
+        
+        .splash-trail {
+          background: radial-gradient(circle, 
+            rgba(0, 255, 157, 0.8) 0%,
+            rgba(0, 191, 255, 0.6) 30%,
+            rgba(138, 43, 226, 0.4) 60%,
+            transparent 100%
+          );
+          filter: blur(8px);
+          animation: trailPulse 0.6s ease-out forwards;
+        }
+        
+        .splash-main {
+          background: radial-gradient(circle,
+            rgba(0, 255, 157, 1) 0%,
+            rgba(0, 191, 255, 0.9) 20%,
+            rgba(138, 43, 226, 0.7) 40%,
+            transparent 70%
+          );
+          filter: blur(4px);
+          animation: mainPulse 0.3s ease-out infinite alternate;
+        }
+        
+        .splash-core {
+          background: radial-gradient(circle,
+            rgba(255, 255, 255, 1) 0%,
+            rgba(0, 255, 157, 0.8) 30%,
+            rgba(0, 191, 255, 0.6) 60%,
+            transparent 100%
+          );
+        }
+        
+        @keyframes trailPulse {
+          0% { 
+            transform: scale(1);
+            opacity: 0.8;
+          }
+          100% { 
+            transform: scale(0.3);
+            opacity: 0;
+          }
+        }
+        
+        @keyframes mainPulse {
+          0% { 
+            transform: scale(1);
+            opacity: 0.9;
+          }
+          100% { 
+            transform: scale(1.1);
+            opacity: 1;
+          }
+        }
+      `}</style>
+      
+      {/* Trail Effects */}
+      {trail.map((pos, index) => (
+        <div
+          key={pos.id}
+          className="fixed pointer-events-none z-40 splash-trail"
+          style={{
+            left: pos.x - 30,
+            top: pos.y - 30,
+            width: 60 - (index * 5),
+            height: 60 - (index * 5),
+            borderRadius: '50%',
+            opacity: (index + 1) / trail.length * 0.6,
+            animationDelay: `${index * 0.05}s`
+          }}
+        />
+      ))}
+      
+      {/* Main Cursor */}
+      {isVisible && (
+        <>
+          {/* Outer Glow */}
+          <div
+            className="fixed pointer-events-none z-50 splash-main"
+            style={{
+              left: cursorPos.x - 25,
+              top: cursorPos.y - 25,
+              width: 50,
+              height: 50,
+              borderRadius: '50%'
+            }}
+          />
+          
+          {/* Inner Core */}
+          <div
+            className="fixed pointer-events-none z-50 splash-core"
+            style={{
+              left: cursorPos.x - 8,
+              top: cursorPos.y - 8,
+              width: 16,
+              height: 16,
+              borderRadius: '50%'
+            }}
+          />
+          
+          {/* Center Dot */}
+          <div
+            className="fixed pointer-events-none z-50"
+            style={{
+              left: cursorPos.x - 2,
+              top: cursorPos.y - 2,
+              width: 4,
+              height: 4,
+              borderRadius: '50%',
+              backgroundColor: 'white',
+              boxShadow: '0 0 10px rgba(255, 255, 255, 0.8)'
+            }}
+          />
+        </>
+      )}
+    </>
+  );
+};
+
+// Floating Cart Component
+const FloatingCart = ({ position }) => {
+  return (
+    <div 
+      className={`absolute ${position} animate-float`}
+      style={{
+        animation: 'float 6s ease-in-out infinite'
+      }}
+    >
+      <div className="relative">
+        <ShoppingCart 
+          size={40} 
+          className="text-white opacity-80 drop-shadow-2xl filter blur-[0.5px]" 
+          style={{
+            filter: 'drop-shadow(0 0 20px rgba(255, 255, 255, 0.5))'
+          }}
+        />
+        <div className="absolute inset-0 bg-white opacity-20 blur-xl rounded-full"></div>
+      </div>
+    </div>
+  );
+};
+
+// Main App Component
+const FusionMMApp = () => {
+  const [notifications, setNotifications] = useState(false);
+
+  const handleNotifyMe = () => {
+    setNotifications(true);
+    setTimeout(() => {
+      setNotifications(false);
+    }, 2000);
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-black via-red-950 to-black relative overflow-hidden">
+      <SplashCursor />
+      
+      {/* Custom CSS for animations */}
+      <style jsx>{`
+        @keyframes float {
+          0%, 100% { transform: translateY(0px) rotate(0deg); }
+          25% { transform: translateY(-20px) rotate(5deg); }
+          50% { transform: translateY(-10px) rotate(-5deg); }
+          75% { transform: translateY(-15px) rotate(3deg); }
+        }
+        
+        @keyframes redGlow {
+          0%, 100% { text-shadow: 0 0 20px #ff0000, 0 0 40px #ff0000, 0 0 60px #ff0000; }
+          50% { text-shadow: 0 0 30px #ff3333, 0 0 60px #ff3333, 0 0 90px #ff3333; }
+        }
+        
+        .neon-red {
+          animation: redGlow 2s ease-in-out infinite;
+        }
+        
+        .floating-particles::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: radial-gradient(circle at 20% 30%, rgba(255, 0, 0, 0.1) 0%, transparent 50%),
+                      radial-gradient(circle at 80% 70%, rgba(255, 0, 0, 0.1) 0%, transparent 50%),
+                      radial-gradient(circle at 40% 80%, rgba(255, 0, 0, 0.05) 0%, transparent 50%);
+          animation: float 8s ease-in-out infinite;
+        }
+      `}</style>
+
+      {/* Background Pattern with red particles */}
+      <div className="absolute inset-0 floating-particles">
+        <div className="absolute top-20 left-20 w-32 h-32 rounded-full bg-red-600 opacity-10 blur-3xl animate-pulse"></div>
+        <div className="absolute top-40 right-32 w-24 h-24 rounded-full bg-red-500 opacity-20 blur-2xl animate-pulse delay-1000"></div>
+        <div className="absolute bottom-32 left-1/3 w-40 h-40 rounded-full bg-red-700 opacity-15 blur-3xl animate-pulse delay-2000"></div>
+        <div className="absolute bottom-20 right-20 w-28 h-28 rounded-full bg-red-600 opacity-10 blur-2xl animate-pulse delay-500"></div>
+        
+        {/* Red particles scattered */}
+        <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-red-500 rounded-full opacity-60 animate-ping"></div>
+        <div className="absolute top-1/3 right-1/4 w-1 h-1 bg-red-400 rounded-full opacity-80 animate-ping delay-1000"></div>
+        <div className="absolute bottom-1/4 left-1/3 w-1.5 h-1.5 bg-red-600 rounded-full opacity-70 animate-ping delay-2000"></div>
+        <div className="absolute bottom-1/3 right-1/3 w-1 h-1 bg-red-500 rounded-full opacity-60 animate-ping delay-500"></div>
+      </div>
+
+      {/* Floating Shopping Carts */}
+      <FloatingCart position="top-16 left-16" />
+      <FloatingCart position="top-32 right-20" />
+      <FloatingCart position="bottom-32 left-24" />
+      <FloatingCart position="bottom-20 right-16" />
+
+      {/* Main Content */}
+      <div className="relative z-10 flex items-center justify-center min-h-screen p-4">
+        <div className="text-center max-w-md w-full">
+          
+          {/* Logo */}
+          <div className="mb-8 relative">
+            <div className="w-24 h-24 mx-auto rounded-full bg-gradient-to-r from-red-600 to-red-800 flex items-center justify-center relative overflow-hidden group border-2 border-red-500">
+              <div className="absolute inset-0 bg-gradient-to-r from-red-400 to-red-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              <span className="text-2xl font-bold text-white relative z-10 neon-red">FM</span>
+              <div className="absolute inset-0 rounded-full border-2 border-red-400 animate-spin opacity-50"></div>
+            </div>
+          </div>
+
+          {/* Title with Neon Effect */}
+          <h1 className="text-4xl font-bold text-red-500 mb-4 neon-red" style={{
+            fontFamily: 'Impact, Arial Black, sans-serif',
+            letterSpacing: '0.1em',
+            textTransform: 'uppercase'
+          }}>
+            Fusion MM & Exchange
+          </h1>
+
+          {/* Description */}
+          <p className="text-gray-300 mb-8 leading-relaxed drop-shadow-lg">
+            Secure & instant crypto exchange and middleman service
+            <br />
+            <span className="text-red-400">— trusted by the community</span>
+          </p>
+
+          {/* Social Buttons with red theme */}
+          <div className="space-y-4 mb-12">
+            <div className="grid grid-cols-2 gap-4">
+              <button className="flex items-center justify-center space-x-2 bg-gradient-to-r from-red-700 to-red-800 hover:from-red-600 hover:to-red-700 text-white py-3 px-6 rounded-lg transition-all duration-300 transform hover:scale-105 hover:shadow-xl hover:shadow-red-500/50 group border border-red-600">
+                <MessageCircle size={20} className="group-hover:rotate-12 transition-transform duration-300" />
+                <span className="font-medium">Discord</span>
+              </button>
+              
+              <button className="flex items-center justify-center space-x-2 bg-gradient-to-r from-red-700 to-red-800 hover:from-red-600 hover:to-red-700 text-white py-3 px-6 rounded-lg transition-all duration-300 transform hover:scale-105 hover:shadow-xl hover:shadow-red-500/50 group border border-red-600">
+                <MessageCircle size={20} className="group-hover:rotate-12 transition-transform duration-300" />
+                <span className="font-medium">Discord Oauth</span>
+              </button>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <button className="flex items-center justify-center space-x-2 bg-gradient-to-r from-red-700 to-red-800 hover:from-red-600 hover:to-red-700 text-white py-3 px-6 rounded-lg transition-all duration-300 transform hover:scale-105 hover:shadow-xl hover:shadow-red-500/50 group border border-red-600">
+                <Send size={20} className="group-hover:translate-x-1 transition-transform duration-300" />
+                <span className="font-medium">Telegram</span>
+              </button>
+              
+              <button className="flex items-center justify-center space-x-2 bg-gradient-to-r from-red-700 to-red-800 hover:from-red-600 hover:to-red-700 text-white py-3 px-6 rounded-lg transition-all duration-300 transform hover:scale-105 hover:shadow-xl hover:shadow-red-500/50 group border border-red-600">
+                <Phone size={20} className="group-hover:rotate-12 transition-transform duration-300" />
+                <span className="font-medium">WhatsApp</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Notification Section */}
+          <div className="bg-black/60 backdrop-blur-sm rounded-xl p-6 border border-red-600/30" style={{
+            boxShadow: '0 0 30px rgba(255, 0, 0, 0.2)'
+          }}>
+            <div className="flex items-center justify-center space-x-2 text-red-400 mb-4">
+              <Bell size={20} className="animate-bounce" />
+              <span className="text-sm font-medium">
+                Want to get notified when our URL changes?
+              </span>
+            </div>
+            
+            <button
+              onClick={handleNotifyMe}
+              disabled={notifications}
+              className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 disabled:from-green-600 disabled:to-green-500 text-white py-2 px-8 rounded-lg font-medium transition-all duration-300 transform hover:scale-105 disabled:scale-100 border border-red-500 hover:shadow-lg hover:shadow-red-500/50"
+            >
+              {notifications ? 'Subscribed! ✓' : 'Notify Me'}
+            </button>
+          </div>
+
+          {/* Footer */}
+          <div className="mt-8 text-gray-400 text-sm">
+            <p className="drop-shadow-lg">© 2025 Fusion MM & Exchange</p>
+            <p className="mt-1 text-red-400">Powered by blockchain technology</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default FusionMMApp;
